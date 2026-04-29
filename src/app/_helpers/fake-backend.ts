@@ -104,7 +104,8 @@ export class FakeBackendInterceptor implements HttpInterceptor {
                     <h4>Email Already Registered</h4>
                     <p>Your email ${account.email} is already registered.</p>
                     <p>if you don't know your password please visit the <a href=" ${location.origin}/account/forgot-password">forgot password</a> page.</p>
-                    <div><strong>NOTE:</strong> The fake backend displayed this "email" so you can test without an api. A real backend would send a real email.</div>
+                    <div><strong>NOTE:</strong> The fake backend displayed this "email" so you can test without an api. 
+                    A real backend would send a real email.</div>
                 `, { autoClose: false});
                 }, 1000);
                 return ok();
@@ -130,13 +131,14 @@ export class FakeBackendInterceptor implements HttpInterceptor {
                 <p>Thanks for registering!</p>
                 <p>Please click the link below to verify your email address:</p>
                 <p><a href="${verifyUrl}">${verifyUrl}</a></p>
-                <div><strong>NOTE:</strong> The fake backend displayed this "email" so you can test without an api. A real backend would send a real email.</div>
+                <div><strong>NOTE:</strong> The fake backend displayed this "email" so you can test without an api. 
+                A real backend would send a real email.</div>
             `, { autoClose: false});
             }, 1000);
 
             return ok();
         }
-        function verifiyEmail() {
+        function verifyEmail() {
             const { token } = body;
             const account = accounts.find(x => !!x.verificationToken && x.verificationToken === token);
 
@@ -163,7 +165,8 @@ export class FakeBackendInterceptor implements HttpInterceptor {
                     <h4>Reset Password Email</h4>
                     <p>Please click the link below to reset your password, the link will be valid for 1 day only:</p>
                     <p><a href="${resetUrl}">${resetUrl}</a></p>
-                    <div><strong>NOTE:</strong> The fake backed displayed this "email" so you can test without an api. A real backend would send a real email. </div>
+                    <div><strong>NOTE:</strong> The fake backed displayed this "email" so you can test without an api. 
+                    A real backend would send a real email. </div>
                 `, { autoClose: false});
             }, 1000);
 
@@ -191,12 +194,12 @@ export class FakeBackendInterceptor implements HttpInterceptor {
 
             return ok();
         }
-        function getAccount() {
+        function getAccounts() {
             if(!isAuthenticated()) return unauthorized();
             return ok(accounts.map(x => basicDetails(x)));
         }
         function getAccountById() {
-            if(!ifAuthenticated()) return unauthorized();
+            if(!isAuthenticated()) return unauthorized();
 
             let account = accounts.find(x => x.id === idFromUrl());
 
@@ -224,7 +227,7 @@ export class FakeBackendInterceptor implements HttpInterceptor {
             return ok();
         }
         function updateAccount() {
-            if (!isAuthenticated()) return unathorized();
+            if (!isAuthenticated()) return unauthorized();
 
             let params = body;
             let account = accounts.find(x => x.id === idFromUrl ());
@@ -244,3 +247,82 @@ export class FakeBackendInterceptor implements HttpInterceptor {
 
             return ok(basicDetails(account));
         }
+        function deleteAccount() {
+            if (!isAuthenticated()) return unauthorized();
+
+            let account = accounts.find(x => x.id === idFromUrl());
+
+            if (account.id !== currentAccount().id && !isAuthorized(Role.Admin)) {
+                return unauthorized();
+            }
+
+            accounts = accounts.filter(x => x.id !== idFromUrl());
+            localStorage.setItem(accountsKey, JSON.stringify(accounts));
+            return ok();
+        }
+        function ok(body?: any) {
+            return of (new HttpResponse({ status: 200, body}))
+                .pipe(delay(500));
+        }
+        function error(message: string) {
+            return throwError(() => ({ error: { message }}))
+                .pipe(materialize(), delay(500), dematerialize());
+        }
+        function unauthorized() {
+            return throwError(() => ({ status: 401, error: { message: 'Unauthorized'} }))
+                .pipe(materialize(), delay(500), dematerialize());
+        }
+        function basicDetails(account: any) {
+            const { id, title, firstName, lastName, email, role, dateCreated, isVerified } = account;
+            return { id, title, firstName, lastName, email, role, dateCreated, isVerified };
+        }
+        function isAuthenticated() {
+            return !!currentAccount();
+        }
+        function isAuthorized(role: any) {
+            const account = currentAccount();
+            if (!account) return false;
+            return account.role === role;
+        }
+        function idFromUrl() {
+            const urlParts = url.split('/');
+            return parseInt(urlParts[urlParts.length - 1]);
+        }
+        function newAccountId() {
+            return accounts.length ? Math.max(... accounts.map(x => x.id)) + 1: 1;
+        }
+        function currentAccount() {
+            const authHeader = headers.get('Authorization');
+            if(!authHeader?.startsWith('Bearer fake-jwt-token')) return;
+
+            const jwtToken = JSON.parse(atob(authHeader.split('.')[1]));
+            const tokenExpired = Date.now() > (jwtToken.exp * 1000);
+            if(tokenExpired) return;
+
+            const account = accounts.find(x => x.id === jwtToken.id);
+            return account;
+        }
+        function generateJwtToken(account: any) {
+            const tokenPayload = {
+                exp: Math.round(new Date(Date.now() + 15*60*1000).getTime() / 1000),
+                id: account.id
+            }
+            return `fake-jwt-token.${btoa(JSON.stringify(tokenPayload))}`;
+        }
+        function generateRefreshToken() {
+            const token = new Date().getTime().toString();
+
+            const expires = new Date(Date.now() + 7*24*60*60*1000). toUTCString();
+            document.cookie = `fakeRefreshToken=${token}; expires=${expires}; path=/`;
+            return token;
+        }
+        function getRefreshToken() {
+            return (document.cookie.split(';').find(x => x.includes('fakeRefreshToken')) || '=').split('=')[1];
+        }
+    }
+}
+export let fakeBackendProvider = {
+    provide: HTTP_INTERCEPTORS,
+    useClass: FakeBackendInterceptor,
+    multi: true
+};
