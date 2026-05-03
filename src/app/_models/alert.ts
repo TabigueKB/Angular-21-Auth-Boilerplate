@@ -6,7 +6,7 @@ export class Alert {
     keepAfterRouteChange?: boolean;
     fade?: boolean;
 
-    constructor(init?: Partial<Alert>){
+    constructor(init?: Partial<Alert>) {
         Object.assign(this, init);
     }
 }
@@ -18,7 +18,7 @@ export enum AlertType {
     Warning
 }
 
-export class AlertOption {
+export class AlertOptions {
     id?: string;
     autoClose?: boolean;
     keepAfterRouteChange?: boolean;

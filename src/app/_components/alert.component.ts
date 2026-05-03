@@ -11,8 +11,8 @@ export class AlertComponent implements OnInit, OnDestroy {
         setTimeout(() => this.cdr.detectChanges());
 
     }
-    @input() id = 'default-alert';
-    @input() fade = true;
+    @Input() id = 'default-alert';
+    @Input() fade = true;
 
     alert: Alert[] = [];
     alertSubscription?: Subscription;
@@ -23,48 +23,43 @@ export class AlertComponent implements OnInit, OnDestroy {
         private alertService: AlertService,
         private cdr: ChangeDetectorRef
     ) { }
+
 ngOnInit() {
     this.alertSubscription = this.alertService.onAlert(this.id)
-    .subscribe(alert => {
+      .subscribe(alert => {
         if (!alert.message) {
-            this.alerts = this.alertService.filter(x => x.keepAfterRouteChange);
-            this.alerts.forEach(x => delete x.keepAfterRouteChange);
-            this.scheduleDetectChanges();
-            return;
+          this.alerts = this.alerts.filter(x => x.keepAfterRouteChange);
+          this.alerts.forEach(x => delete x.keepAfterRouteChange);
+          return;
         }
         this.alerts.push(alert);
-        this.scheduleDetectChanges();
-        
         if (alert.autoClose) {
-            setTimeout(() => this.removeAlert(alert), 3000);
+          setTimeout(() => this.removeAlert(alert), 3000);
         }
-    
-    });
-    
+      });
     this.routeSubscription = this.router.events.subscribe(event => {
-        if (event instanceof NavigationStart) {
-            this.alertService.clear(this.id);
-            this.scheduleDetectChanges();
-        }
-     });
-    }
+      if (event instanceof NavigationStart) {
+        this.alertService.clear(this.id);
+      }
+    });
+  }
     ngOnDestroy() {
         this.alertSubscription?.unsubscribe();
         this.routeSubscription?.unsubscribe();
     }
     removeAlert(alert: Alert) {
-        if (!this.alerts.includes(alert)) return;
+        if (!this.alert.includes(alert)) return;
 
         if (this.fade) {
             alert.fade = true;
             this.scheduleDetectChanges();
 
             setTimeout(() => {
-                this.alerts = this.alerts.filter(x => x !== alert);
+                this.alert = this.alert.filter(x => x !== alert);
                 this.scheduleDetectChanges();
             }, 250);
         } else {
-            this.alerts = this.alerts.filter(x => x !== alert);
+            this.alert = this.alert.filter(x => x !== alert);
             this.scheduleDetectChanges();
         }
     }
