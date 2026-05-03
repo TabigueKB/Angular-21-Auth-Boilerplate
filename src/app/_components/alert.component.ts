@@ -14,7 +14,7 @@ export class AlertComponent implements OnInit, OnDestroy {
     @Input() id = 'default-alert';
     @Input() fade = true;
 
-    alert: Alert[] = [];
+    alerts: Alert[] = [];
     alertSubscription?: Subscription;
     routeSubscription?: Subscription;
 
@@ -48,18 +48,18 @@ ngOnInit() {
         this.routeSubscription?.unsubscribe();
     }
     removeAlert(alert: Alert) {
-        if (!this.alert.includes(alert)) return;
+        if (!this.alerts.includes(alert)) return;
 
         if (this.fade) {
             alert.fade = true;
             this.scheduleDetectChanges();
 
             setTimeout(() => {
-                this.alert = this.alert.filter(x => x !== alert);
+                this.alerts = this.alerts.filter(x => x !== alert);
                 this.scheduleDetectChanges();
             }, 250);
         } else {
-            this.alert = this.alert.filter(x => x !== alert);
+            this.alerts = this.alerts.filter(x => x !== alert);
             this.scheduleDetectChanges();
         }
     }

@@ -58,6 +58,7 @@ export class FakeBackendInterceptor implements HttpInterceptor {
 
             if (!account) return error('Email or password is incorrect');
 
+            if (!account.refreshTokens) account.refreshTokens = [];
             account.refreshTokens.push(generateRefreshToken());
             localStorage.setItem(accountsKey, JSON.stringify(accounts));
 
@@ -117,9 +118,9 @@ export class FakeBackendInterceptor implements HttpInterceptor {
                 account.role = Role.User;
             }
             account.dateCreated = new Date().toISOString();
-            account.verificationToken = new Date().getTime().toExponential.toString();
+            account.verificationToken = new Date().getTime().toString();
             account.isVerified = false;
-            account.refreshToken = [];
+            account.refreshTokens = [];
             delete account.confirmPassword;
             accounts.push(account);
             localStorage.setItem(accountsKey, JSON.stringify(accounts));
